@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "routevalidator",
+	"version": "${version}",
+	"name": "Route Validator",
+	"description": "Validates (checks) to see if there is a coal vein at every one of your route waypoints",
+	"authors": [
+		"SirMrPickle"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/routevalidator/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.pickle.rv.RouteValidator"
+		],
+		"client": [
+			"net.pickle.rv.RVClient"
+		],
+		"fabric-datagen": [
+			"net.pickle.rv.RouteValidatorDataGenerator"
+		]
+	},
+	"mixins": [
+		"routevalidator.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
