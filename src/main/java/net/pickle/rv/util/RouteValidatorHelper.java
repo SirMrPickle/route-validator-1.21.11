@@ -125,7 +125,8 @@ public final class RouteValidatorHelper {
     public static MutableComponent formatResult(ValidationResult result) {
         return Component.literal("[")
                 .withStyle(ChatFormatting.DARK_GRAY)
-                .append(Component.literal("RV").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal("R").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal("V").withStyle(ChatFormatting.AQUA))
                 .append(Component.literal("] ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal("Validation complete: ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(String.valueOf(result.validCount())).withStyle(ChatFormatting.GREEN))

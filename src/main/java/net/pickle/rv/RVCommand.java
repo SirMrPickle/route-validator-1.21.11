@@ -7,19 +7,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.block.Block;
-import net.pickle.rv.util.JSONLoader;
-import net.pickle.rv.util.Message;
-import net.pickle.rv.util.RouteExportHelper;
-import net.pickle.rv.util.RouteValidatorHelper;
-import net.pickle.rv.util.Waypoint;
+import net.pickle.rv.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,11 @@ public final class RVCommand {
                                                         context,
                                                         IntegerArgumentType.getInteger(context, "range"),
                                                         parseBlocks(StringArgumentType.getString(context, "blocks"))
-                                                ))))));
+                                                ))))))
+                .then(ClientCommandManager.literal("prep")
+                        .then(ClientCommandManager.argument("route", StringArgumentType.word())
+                                .suggests(RVCommand::suggestRoutes)
+                                .executes(RVCommand::prepRoute)));
     }
 
     private static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestRoutes(
@@ -57,6 +60,43 @@ public final class RVCommand {
         } catch (Exception ignored) {
         }
         return builder.buildFuture();
+    }
+
+    private static int prepRoute(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        String route = StringArgumentType.getString(context, "route");
+
+        try {
+            Map<String, List<Waypoint>> routes = JSONLoader.loadRoutesFromDefaultLocation();
+            List<Waypoint> waypoints = routes.get(route);
+            List<Block> list = new ArrayList<>();
+
+            BuiltInRegistries.BLOCK.getOptional(Identifier.tryParse("minecraft:coal_ore"))
+                    .ifPresent(list::add);
+
+            if (waypoints == null) {
+                source.sendError(Message.error("Route not found: " + route));
+                return 0;
+            }
+
+            RouteValidatorHelper.ValidationResult result =
+                    RouteValidatorHelper.validateWaypoints(source.getWorld(), waypoints, 3, list);
+
+            String validWaypointJson = RouteExportHelper.toValidatedWaypointJson(result.validWaypoints());
+
+            Minecraft mc = Minecraft.getInstance();
+            source.sendFeedback(Message.info("Unloading old waypoints..."));
+            mc.getConnection().sendCommand("sho unload");
+            mc.keyboardHandler.setClipboard(validWaypointJson);
+            source.sendFeedback(RouteValidatorHelper.formatResult(result));
+            mc.getConnection().sendCommand("sho load");
+            source.sendFeedback(Message.info("New waypoints loaded!"));
+
+            return 1;
+        } catch (Exception e) {
+            source.sendError(Message.error("Prep failed: " + e.getMessage()));
+            return 0;
+        }
     }
 
     private static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestBlocks(
