@@ -1,20 +1,19 @@
-
 # Route Validator (RV)
 
-With my short attention span, I got pissed at needing to check every coal route (or I guess any route) in the crystal hallows for structure greifing, or it already being mined out, so I automated it.
+I got tired of manually checking every coal route (or really, any route) in the Crystal Hollows to see if it had been griefed or already mined out, so I built a tool to automate it.
 
-I took some introductory level Java classes in junior-high. Keyword: introductory. I by no means am taking this project as work done soley by myself, I vibe-coded a lot of it.
+I took a few introductory Java classes back in junior high—emphasis on *introductory*. This project definitely wasn't written entirely by me, and I used AI assistance ("vibe coding") for a good portion of it.
 
-With that being said, all of the code is safe, not malicious, and reasonably well written. Please by all means make forks, changes, do what you want.
+That said, the code is safe, non-malicious, and reasonably well organized. Feel free to fork it, modify it, or use it however you'd like. All I ask is that you credit me for the original idea.
+
 ## Features
 
-- Skyhanni routes integration
-- Auto-suggest routes
-- Copy-and-paste-able non-greifed waypoints
-- Adjustable search range
-
+* ✅ SkyHanni route integration
+* ✅ Automatic route suggestions
+* ✅ Copy-and-paste-ready, non-griefed waypoints
+* ✅ Adjustable search radius
+* ✅ Automatic validation and loading of validated routes
 
 ## Authors
 
-- [@sirmrpickle](https://www.github.com/sirmrpickle)
-- [@perplexity-ai]
+* [@sirmrpickle](https://github.com/sirmrpickle)
