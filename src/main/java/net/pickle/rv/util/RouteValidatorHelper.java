@@ -1,11 +1,14 @@
 package net.pickle.rv.util;
 
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientChunkCache;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -23,8 +26,10 @@ public final class RouteValidatorHelper {
     public record ValidationResult(
             int validCount,
             int invalidCount,
+            int unloadedCount,
             List<Waypoint> validWaypoints,
-            List<Waypoint> invalidWaypoints
+            List<Waypoint> invalidWaypoints,
+            List<Waypoint> unloadedWaypoints
     ) {
     }
 
@@ -59,6 +64,15 @@ public final class RouteValidatorHelper {
         return false;
     }
 
+    public static boolean isChunkLoaded(ClientLevel clientWorld, ChunkPos chunkPos) {
+        if (clientWorld == null || chunkPos == null) {
+            return false;
+        }
+
+        ClientChunkCache chunkCache = clientWorld.getChunkSource();
+        return chunkCache.hasChunk(chunkPos.x, chunkPos.z);
+    }
+
     public static boolean hasAllowedBlockInRange(BlockGetter level, BlockPos center, int range, List<Block> blocks) {
         int actualRange = Math.max(0, range - 1);
 
@@ -79,9 +93,17 @@ public final class RouteValidatorHelper {
     public static ValidationResult validateWaypoints(BlockGetter level, List<Waypoint> waypoints, int range, List<Block> blocks) {
         List<Waypoint> validWaypoints = new ArrayList<>();
         List<Waypoint> invalidWaypoints = new ArrayList<>();
+        List<Waypoint> unloadedWaypoints = new ArrayList<>();
+
+        ClientLevel clientWorld = Minecraft.getInstance().level;
 
         for (Waypoint waypoint : waypoints) {
             BlockPos pos = toBlockPos(waypoint.location);
+
+            if (!isChunkLoaded(clientWorld, new ChunkPos(pos))) {
+                unloadedWaypoints.add(waypoint);
+                continue;
+            }
 
             if (hasAllowedBlockInRange(level, pos, range, blocks)) {
                 validWaypoints.add(waypoint);
@@ -93,8 +115,10 @@ public final class RouteValidatorHelper {
         return new ValidationResult(
                 validWaypoints.size(),
                 invalidWaypoints.size(),
+                unloadedWaypoints.size(),
                 validWaypoints,
-                invalidWaypoints
+                invalidWaypoints,
+                unloadedWaypoints
         );
     }
 
@@ -107,6 +131,8 @@ public final class RouteValidatorHelper {
                 .append(Component.literal(String.valueOf(result.validCount())).withStyle(ChatFormatting.GREEN))
                 .append(Component.literal(" valid, ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(String.valueOf(result.invalidCount())).withStyle(ChatFormatting.RED))
-                .append(Component.literal(" invalid").withStyle(ChatFormatting.WHITE));
+                .append(Component.literal(" invalid, ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(String.valueOf(result.unloadedCount())).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" unloaded").withStyle(ChatFormatting.WHITE));
     }
 }
