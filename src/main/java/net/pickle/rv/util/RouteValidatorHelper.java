@@ -1,10 +1,12 @@
 package net.pickle.rv.util;
 
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -44,18 +46,27 @@ public final class RouteValidatorHelper {
         return new BlockPos(xyz.x(), xyz.y(), xyz.z());
     }
 
-    public static boolean isCoalOre(Level level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        return state.is(Blocks.COAL_ORE);
+    public static boolean matchesAny(BlockState state, List<Block> blocks) {
+        if (blocks == null || blocks.isEmpty()) {
+            return false;
+        }
+
+        for (Block block : blocks) {
+            if (state.is(block)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public static boolean hasCoalOreInRange(Level level, BlockPos center, int range) {
+    public static boolean hasAllowedBlockInRange(BlockGetter level, BlockPos center, int range, List<Block> blocks) {
         int actualRange = Math.max(0, range - 1);
 
         for (int dx = -actualRange; dx <= actualRange; dx++) {
             for (int dy = -actualRange; dy <= actualRange; dy++) {
                 for (int dz = -actualRange; dz <= actualRange; dz++) {
-                    if (isCoalOre(level, center.offset(dx, dy, dz))) {
+                    BlockPos pos = center.offset(dx, dy, dz);
+                    if (matchesAny(level.getBlockState(pos), blocks)) {
                         return true;
                     }
                 }
@@ -65,14 +76,14 @@ public final class RouteValidatorHelper {
         return false;
     }
 
-    public static ValidationResult validateWaypoints(Level level, List<Waypoint> waypoints, int range) {
+    public static ValidationResult validateWaypoints(BlockGetter level, List<Waypoint> waypoints, int range, List<Block> blocks) {
         List<Waypoint> validWaypoints = new ArrayList<>();
         List<Waypoint> invalidWaypoints = new ArrayList<>();
 
         for (Waypoint waypoint : waypoints) {
             BlockPos pos = toBlockPos(waypoint.location);
 
-            if (hasCoalOreInRange(level, pos, range)) {
+            if (hasAllowedBlockInRange(level, pos, range, blocks)) {
                 validWaypoints.add(waypoint);
             } else {
                 invalidWaypoints.add(waypoint);
@@ -89,14 +100,13 @@ public final class RouteValidatorHelper {
 
     public static MutableComponent formatResult(ValidationResult result) {
         return Component.literal("[")
-                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY)
-                .append(Component.literal("R").withStyle(net.minecraft.ChatFormatting.GOLD))
-                .append(Component.literal("V").withStyle(net.minecraft.ChatFormatting.AQUA))
-                .append(Component.literal("] ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
-                .append(Component.literal("Validation complete: ").withStyle(net.minecraft.ChatFormatting.WHITE))
-                .append(Component.literal(String.valueOf(result.validCount())).withStyle(net.minecraft.ChatFormatting.GREEN))
-                .append(Component.literal(" valid, ").withStyle(net.minecraft.ChatFormatting.WHITE))
-                .append(Component.literal(String.valueOf(result.invalidCount())).withStyle(net.minecraft.ChatFormatting.RED))
-                .append(Component.literal(" invalid").withStyle(net.minecraft.ChatFormatting.WHITE));
+                .withStyle(ChatFormatting.DARK_GRAY)
+                .append(Component.literal("RV").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal("] ").withStyle(ChatFormatting.DARK_GRAY))
+                .append(Component.literal("Validation complete: ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(String.valueOf(result.validCount())).withStyle(ChatFormatting.GREEN))
+                .append(Component.literal(" valid, ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(String.valueOf(result.invalidCount())).withStyle(ChatFormatting.RED))
+                .append(Component.literal(" invalid").withStyle(ChatFormatting.WHITE));
     }
 }
